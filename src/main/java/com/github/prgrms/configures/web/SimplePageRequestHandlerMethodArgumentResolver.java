@@ -1,10 +1,15 @@
 package com.github.prgrms.configures.web;
 
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.core.MethodParameter;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
+
+import static org.apache.commons.lang3.math.NumberUtils.toInt;
+import static org.apache.commons.lang3.math.NumberUtils.toLong;
+import static org.springframework.util.StringUtils.hasText;
 
 public class SimplePageRequestHandlerMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
@@ -35,8 +40,25 @@ public class SimplePageRequestHandlerMethodArgumentResolver implements HandlerMe
     String offsetString = webRequest.getParameter(offsetParameterName);
     String sizeString = webRequest.getParameter(sizeParameterName);
 
-    // TODO 구현이 필요 합니다.
-    throw new UnsupportedOperationException("SimplePageRequest 인스턴스를 리턴하도록 구현 필요");
+    long offset = hasText(offsetString) ? toLong(offsetString, DEFAULT_OFFSET) : toLong(offsetString);
+    int size = hasText(sizeString) ? toInt(sizeString, DEFAULT_SIZE) : toInt(sizeString);
+
+    offset = offset >= Long.MAX_VALUE ? Long.MAX_VALUE : offset < 0 ? 0 : offset;
+    size = size > 5 ? 5 : Math.max(size, 1);
+
+    long finalOffset = offset;
+    int finalSize = size;
+    return new Pageable() {
+      @Override
+      public long getOffset() {
+        return finalOffset;
+      }
+
+      @Override
+      public int getSize() {
+        return finalSize;
+      }
+    };
   }
 
   public void setOffsetParameterName(String offsetParameterName) {
